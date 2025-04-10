@@ -203,6 +203,10 @@ input:focus {
     padding: 1.5rem;
     border-radius: 8px;
     box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    font-size: 1.2em;
+    font-weight: bold;
+    margin: 1em 0;
+    text-align: center;
 }
 
 #chart {
@@ -211,21 +215,6 @@ input:focus {
     border-radius: 8px;
     box-shadow: 0 2px 4px rgba(0,0,0,0.1);
     flex-grow: 1;
-}
-
-#message {
-    margin-bottom: 2rem;
-    padding: 1rem;
-    background: white;
-    border-radius: 8px;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-}
-
-#chart {
-    background: white;
-    padding: 2rem;
-    border-radius: 8px;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
 }
 
 /* Responsive Design */

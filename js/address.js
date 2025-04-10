@@ -21,9 +21,7 @@ function initializeAddressEntry(events) {
     //create another event that zooms into the map when buffer is selected
     events.addEventListener('address-zoom-map', (evt) => {
       const { buffer } = evt.detail;
-      if (buffer) {
-        filterSpotsByBuffer(buffer);
-      }
+      // We don't need to filter spots here as it's handled in main.js
     });
   
     //add a listener event for clicks of search buttons
@@ -36,8 +34,8 @@ function initializeAddressEntry(events) {
 
       //take the lat longs of selected point
       const selectedPoint = turf.point([selectedLocation.lon, selectedLocation.lat]);
-      //create a 500m buffer
-      const buffer = turf.buffer(selectedPoint, 0.5, { units: 'kilometers' });
+      //create a 750m buffer
+      const buffer = turf.buffer(selectedPoint, 0.75, { units: 'kilometers' });
   
       //zoom to selected location
       const addressLL = new CustomEvent('address-zoom-map', {
