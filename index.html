@@ -15,8 +15,15 @@
     </head>
     <body>
         <header>
-            <h1 id="title">YIMBY</h1>
-            <h2 id="subtitle">Find the impact of New Construction</h2>
+            <!-- Modified section with logo and title in container -->
+            <div class="title-container">
+                <svg class="logo" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+                    <path d="M12 2L1 12h3v9h16v-9h3L12 2zm0 2.41L19.59 12H16v7H8v-7H4.41L12 4.41zM10 16h4v3h-4z"/>
+                </svg>
+                <h1 id="title">YIMBY</h1>
+            </div>
+            <!-- Rest of header unchanged -->
+            <h2 id="subtitle">Embrace Growth, Create Community</h2>
             <nav>
                 <ul class="tabs">
                     <li class="tab active" data-tab="main">Map View</li>
@@ -24,14 +31,13 @@
                 </ul>
             </nav>
         </header>
-
         <main>
             <div id="main-view" class="tab-content active">
                 <div class="content-wrapper">
                     <div id="map-container">
                         <div id="map"></div>
                     </div>
-                    
+                   
                     <div id="search-panel">
                         <fieldset>
                             <div class="input-group">
@@ -41,18 +47,19 @@
                                     <ul id="address-choices" class="hidden"></ul>
                                 </div>
                             </div>
-                            
+                           
                             <div class="input-group">
                                 <label>Year</label>
                                 <input id="timestamp" type="number" name="year" min="1900" max="2025"/>
                             </div>
-                            
+                           
                             <button id="search">Search</button>
+                    
+                            <p class="search-description">Find the impact of new construction in your Philadelphia neighborhood. See how property values and median income have changed from 2015 to 2023.</p>
                         </fieldset>
                     </div>
                 </div>
             </div>
-
             <div id="dashboard-view" class="tab-content">
                 <div class="dashboard-wrapper">
                     <div class="dashboard-left">
@@ -66,9 +73,8 @@
                     </div>
                 </div>
             </div>
-            
+           
         </main>
-
         <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
         <script src='https://unpkg.com/@turf/turf@6/turf.min.js'></script>
         <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>

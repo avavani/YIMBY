@@ -13,7 +13,7 @@ function initMap(el) {
   });
 
   const Mapboxkey = 'pk.eyJ1IjoiYWF2YW5pMTAzIiwiYSI6ImNtMTgxOGkyZzBvYnQyam16bXFydTUwM3QifQ.hXw8FwWysnOw3It_Sms3UQ';
-  const Mapboxstyle = 'mapbox/dark-v11';
+  const Mapboxstyle = 'mapbox/light-v11';
   L.tileLayer(
     `https://api.mapbox.com/styles/v1/${Mapboxstyle}/tiles/512/{z}/{x}/{y}{r}?access_token=${Mapboxkey}`,
     { maxZoom: 20 },
