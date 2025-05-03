@@ -2,8 +2,10 @@
 import { initMap } from './map.js';
 //call initialize address function
 import { initializeAddressEntry } from './address.js';
-//import spots data loading function
-import { loadSpotsData } from './spots_data.js';
+//import spots data loading functions
+import { loadSpotsData, loadSpotsByRCO, loadSpotsByDistrict } from './spots_data.js';
+//import search type handler
+import { initializeSearchTypeHandler } from './search.js';
 
 //import charts.js to update message
 import { updateMessage } from './charts.js';
@@ -49,28 +51,32 @@ document.addEventListener('DOMContentLoaded', () => {
     const dashboardMapEl = document.querySelector('#dashboard-map');
     const { map: dashboardMap, showBuffer: dashboardShowBuffer, addSpots } = initMap(dashboardMapEl);
 
+    //initialize search type handler
+    initializeSearchTypeHandler();
+
     //initialize address entry functionality
     initializeAddressEntry(events);
 
-    //handle address-zoom-map events to show buffer and enable dashboard
-    events.addEventListener('address-zoom-map', async (evt) => {
-        const { buffer, lat, lon } = evt.detail;
+
+    events.addEventListener('address-search', async (evt) => {
+        const { buffer, lat, lon, year } = evt.detail;
         
         if (lat && lon) {
             try {
-                console.log('Loading spots data...');
-                const { spots } = await loadSpotsData(lat, lon);
+                console.log('Loading spots data for address...');
+                const { spots } = await loadSpotsData(lat, lon, 750, year);
                 console.log('Spots loaded:', spots);
                 
                 // Enable dashboard
                 dashboardTab.classList.remove('disabled');
                 
-                // Only show buffer on dashboard map
+                // Show buffer and spots on dashboard map
                 if (buffer) {
                     dashboardShowBuffer(buffer);
                     if (spots && spots.features) {
                         console.log('Adding spots to dashboard map...');
                         addSpots(spots);
+                        updateMessage(spots.features);
                     }
                 }
                 
@@ -81,6 +87,80 @@ document.addEventListener('DOMContentLoaded', () => {
                 console.error('Error loading dashboard:', error);
                 alert('Error loading data. Please try again.');
             }
+        }
+    });
+
+    //handle RCO search events
+    events.addEventListener('rco-search', async (evt) => {
+        const { rcoName, year } = evt.detail;
+        
+        try {
+            console.log('Loading spots data for RCO:', rcoName);
+            const { spots } = await loadSpotsByRCO(rcoName, year);
+            console.log('Spots loaded:', spots);
+            
+            // Enable dashboard
+            dashboardTab.classList.remove('disabled');
+            
+            // Show spots on dashboard map
+            if (spots && spots.features) {
+                console.log('Adding spots to dashboard map...');
+                addSpots(spots);
+                updateMessage(spots.features);
+                
+                // Zoom to fit all features
+                if (spots.features.length > 0) {
+                    const bounds = L.latLngBounds(spots.features.map(f => [
+                        f.geometry.coordinates[1],
+                        f.geometry.coordinates[0]
+                    ]));
+                    dashboardMap.fitBounds(bounds, { padding: [50, 50] });
+                }
+            }
+            
+            // Switch to dashboard view
+            switchToDashboard();
+            
+        } catch (error) {
+            console.error('Error loading RCO data:', error);
+            alert('Error loading data. Please try again.');
+        }
+    });
+
+    //handle District search events
+    events.addEventListener('district-search', async (evt) => {
+        const { district, year } = evt.detail;
+        
+        try {
+            console.log('Loading spots data for District:', district);
+            const { spots } = await loadSpotsByDistrict(district, year);
+            console.log('Spots loaded:', spots);
+            
+            // Enable dashboard
+            dashboardTab.classList.remove('disabled');
+            
+            // Show spots on dashboard map
+            if (spots && spots.features) {
+                console.log('Adding spots to dashboard map...');
+                addSpots(spots);
+                updateMessage(spots.features);
+                
+                // Zoom to fit all features
+                if (spots.features.length > 0) {
+                    const bounds = L.latLngBounds(spots.features.map(f => [
+                        f.geometry.coordinates[1],
+                        f.geometry.coordinates[0]
+                    ]));
+                    dashboardMap.fitBounds(bounds, { padding: [50, 50] });
+                }
+            }
+            
+            // Switch to dashboard view
+            switchToDashboard();
+            
+        } catch (error) {
+            console.error('Error loading district data:', error);
+            alert('Error loading data. Please try again.');
         }
     });
 

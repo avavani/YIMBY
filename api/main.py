@@ -5,6 +5,7 @@ from shapely.geometry import Point, shape
 import json
 import os
 from pyproj import Geod
+from typing import Optional
 
 app = FastAPI()
 
@@ -18,7 +19,7 @@ app.add_middleware(
 )
 
 # Load GeoJSON data
-DATA_PATH = os.path.join(os.path.dirname(__file__), "../data/multifamily.geojson")
+DATA_PATH = os.path.join(os.path.dirname(__file__), "../data/yimby_data.geojson")
 
 try:
     with open(DATA_PATH, 'r') as f:
@@ -30,7 +31,19 @@ except Exception as e:
 class CoordinateRequest(BaseModel):
     lat: float
     lon: float
-    buffer_meters: float = 750  # Default buffer of 750 meters
+    buffer_meters: float = 750
+    year_start: Optional[int] = None
+    year_end: Optional[int] = None
+
+class RCORequest(BaseModel):
+    rco_name: str
+    year_start: Optional[int] = None
+    year_end: Optional[int] = None
+
+class DistrictRequest(BaseModel):
+    district: str
+    year_start: Optional[int] = None
+    year_end: Optional[int] = None
 
 @app.post("/api/spots-in-buffer")
 async def get_spots_in_buffer(coords: CoordinateRequest):
@@ -41,10 +54,18 @@ async def get_spots_in_buffer(coords: CoordinateRequest):
         # Use a geodesic calculation for accurate buffer
         geod = Geod(ellps="WGS84")
         
-        # Filter features within buffer
+        # Filter features within buffer and by year
         filtered_features = []
         for feature in geojson_data["features"]:
             try:
+                # Check year range if provided
+                cons_complete = feature["properties"].get("cons_complete")
+                if cons_complete:
+                    if coords.year_start and cons_complete < coords.year_start:
+                        continue
+                    if coords.year_end and cons_complete > coords.year_end:
+                        continue
+                
                 # Handle different geometry types
                 feature_geom = shape(feature["geometry"])
                 
@@ -69,6 +90,80 @@ async def get_spots_in_buffer(coords: CoordinateRequest):
             "features": filtered_features,
             "count": len(filtered_features)
         }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"An error occurred: {str(e)}")
+
+@app.post("/api/spots-by-rco")
+async def get_spots_by_rco(request: RCORequest):
+    try:
+        filtered_features = []
+        for feature in geojson_data["features"]:
+            # Filter by RCO name
+            if feature["properties"].get("RCO") == request.rco_name:
+                # Check year range if provided
+                cons_complete = feature["properties"].get("cons_complete")
+                if cons_complete:
+                    if request.year_start and cons_complete < request.year_start:
+                        continue
+                    if request.year_end and cons_complete > request.year_end:
+                        continue
+                filtered_features.append(feature)
+        
+        return {
+            "type": "FeatureCollection",
+            "features": filtered_features,
+            "count": len(filtered_features)
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"An error occurred: {str(e)}")
+
+@app.post("/api/spots-by-district")
+async def get_spots_by_district(request: DistrictRequest):
+    try:
+        filtered_features = []
+        for feature in geojson_data["features"]:
+            # Filter by district
+            if feature["properties"].get("DISTRICT") == request.district:
+                # Check year range if provided
+                cons_complete = feature["properties"].get("cons_complete")
+                if cons_complete:
+                    if request.year_start and cons_complete < request.year_start:
+                        continue
+                    if request.year_end and cons_complete > request.year_end:
+                        continue
+                filtered_features.append(feature)
+        
+        return {
+            "type": "FeatureCollection",
+            "features": filtered_features,
+            "count": len(filtered_features)
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"An error occurred: {str(e)}")
+
+@app.get("/api/rco-list")
+async def get_rco_list():
+    """Get a list of unique RCO names"""
+    try:
+        rco_set = set()
+        for feature in geojson_data["features"]:
+            rco = feature["properties"].get("RCO")
+            if rco:
+                rco_set.add(rco)
+        return sorted(list(rco_set))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"An error occurred: {str(e)}")
+
+@app.get("/api/district-list")
+async def get_district_list():
+    """Get a list of unique district numbers"""
+    try:
+        district_set = set()
+        for feature in geojson_data["features"]:
+            district = feature["properties"].get("DISTRICT")
+            if district:
+                district_set.add(district)
+        return sorted(list(district_set))
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"An error occurred: {str(e)}")
 

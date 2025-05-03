@@ -16,10 +16,12 @@ function initMap(el) {
   const Mapboxstyle = 'mapbox/light-v11';
   L.tileLayer(
     `https://api.mapbox.com/styles/v1/${Mapboxstyle}/tiles/512/{z}/{x}/{y}{r}?access_token=${Mapboxkey}`,
-    { maxZoom: 20 },
+    { maxZoom: 19, 
+      // zoomOffset: -1,
+     },
   ).addTo(map);
 
-  map.setView([39.953316807397144, -75.13516854006843], 12);
+  map.setView([39.953316807397144, -75.13516854006843], 14);
   
   // Create a layer group to manage the buffer
   const bufferLayer = L.layerGroup().addTo(map);
