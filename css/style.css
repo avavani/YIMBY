@@ -420,7 +420,7 @@ input:focus {
     color: var(--text-dark);
     background-color: var(--light-bg);
     position: relative;
-    overflow: auto;
+    overflow: visible;
     margin-bottom: 1.5rem;
     border-radius: 12px;
     box-shadow: var(--shadow-soft);

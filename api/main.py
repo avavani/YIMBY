@@ -1,15 +1,11 @@
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
-from shapely.geometry import Point, Polygon, shape
+from shapely.geometry import Point, shape
 import json
-import os
 import statistics
 import numpy as np
-from google.cloud import storage
-from dotenv import load_dotenv
-# Load environment variables from .env file
-load_dotenv()
+import os
 
 app = FastAPI()
 
@@ -22,22 +18,14 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Google Cloud Storage configuration
-BUCKET_NAME = "Practicum"  # Replace with your actual bucket name
-GEOJSON_BLOB_NAME = "data/yimby.geojson"  # Path in your bucket
-
-# Initialize Google Cloud Storage client
-storage_client = storage.Client()
-bucket = storage_client.bucket(BUCKET_NAME)
-
-# Load GeoJSON data from Google Cloud Storage
+# Load GeoJSON data from local file
 try:
-    blob = bucket.blob(GEOJSON_BLOB_NAME)
-    geojson_content = blob.download_as_text()
-    geojson_data = json.loads(geojson_content)
-    print(f"Successfully loaded GeoJSON data from Cloud Storage")
+    local_geojson_path = os.path.join("..", "data", "yimby.geojson")
+    with open(local_geojson_path, "r") as f:
+        geojson_data = json.load(f)
+    print(f"Successfully loaded GeoJSON data from {local_geojson_path}")
 except Exception as e:
-    print(f"Error loading GeoJSON data from Cloud Storage: {e}")
+    print(f"Error loading GeoJSON data from local file: {e}")
     geojson_data = {"type": "FeatureCollection", "features": []}
 
 class CoordinateRequest(BaseModel):
@@ -45,38 +33,25 @@ class CoordinateRequest(BaseModel):
     lon: float
     buffer_meters: float = 250
 
-# The rest of your code remains the same
 def calculate_average(values):
-    """Calculate average of a list of values, filtering out None/null values"""
     if not values:
         return None
-    
-    # Filter out None/null values and convert to float
     filtered_values = [float(v) for v in values if v is not None and v != ""]
-    
-    if not filtered_values:
-        return None
-    
-    return sum(filtered_values) / len(filtered_values)
+    return sum(filtered_values) / len(filtered_values) if filtered_values else None
 
 def calculate_statistics(features):
-    # Your existing calculate_statistics function (unchanged)
-    """Calculate various statistics from the features"""
     if not features:
         return {}
     
-    # Initialize data structures
     yearly_data = {}
     zoning_data = {}
     market_values = []
     sale_prices = []
     impact_scores = []
-    
-    # Process each feature
+
     for feature in features:
         props = feature.get("properties", {})
-        
-        # Extract yearly data
+
         for year in range(2015, 2024):
             year_str = str(year)
             if year_str not in yearly_data:
@@ -85,40 +60,34 @@ def calculate_statistics(features):
                     "home_values": [],
                     "count": 0
                 }
-            
+
             income = props.get(f"med_income_{year}")
             home_value = props.get(f"med_home_value_{year}")
-            
+
             if income is not None:
                 yearly_data[year_str]["incomes"].append(income)
             if home_value is not None:
                 yearly_data[year_str]["home_values"].append(home_value)
-            
-            # Count by construction completion year
+
             cons_complete = props.get("cons_complete")
             if cons_complete == year or cons_complete == year_str:
                 yearly_data[year_str]["count"] += 1
-        
-        # Extract zoning data
+
         zoning = props.get("zoning")
         if zoning:
-            if zoning not in zoning_data:
-                zoning_data[zoning] = 0
-            zoning_data[zoning] += 1
-        
-        # Extract market value and sale price
+            zoning_data[zoning] = zoning_data.get(zoning, 0) + 1
+
         market_value = props.get("market_value")
         sale_price = props.get("sale_price")
         impact_score = props.get("impact_score")
-        
-        if market_value is not None and market_value != "":
+
+        if market_value not in (None, ""):
             market_values.append(float(market_value))
-        if sale_price is not None and sale_price != "":
+        if sale_price not in (None, ""):
             sale_prices.append(float(sale_price))
-        if impact_score is not None and impact_score != "":
+        if impact_score not in (None, ""):
             impact_scores.append(float(impact_score))
-    
-    # Calculate statistics
+
     stats = {
         "years": [],
         "avgIncome": [],
@@ -129,18 +98,12 @@ def calculate_statistics(features):
         "avgMarketValue": calculate_average(market_values),
         "avgSalePrice": calculate_average(sale_prices)
     }
-    
-    # Calculate impact score statistics and normalize
+
     avg_impact_score = calculate_average(impact_scores)
-    
-    # If we have impact scores, normalize them around 100
     if avg_impact_score is not None:
-        if avg_impact_score > 500:  # If too large, normalize
-            normalization_factor = avg_impact_score / 100
-            stats["avgImpactScore"] = 100  # Normalized value
-            stats["rawAvgImpactScore"] = avg_impact_score  # Original value
-            
-            # Log for debugging
+        if avg_impact_score > 500:
+            stats["avgImpactScore"] = 100
+            stats["rawAvgImpactScore"] = avg_impact_score
             print(f"Normalized impact score: original={avg_impact_score}, normalized=100")
         else:
             stats["avgImpactScore"] = avg_impact_score
@@ -148,56 +111,34 @@ def calculate_statistics(features):
     else:
         stats["avgImpactScore"] = None
         stats["rawAvgImpactScore"] = None
-    
-    # Calculate yearly averages
+
     for year in sorted(yearly_data.keys()):
         stats["years"].append(year)
-        
-        # Average income
-        stats["avgIncome"].append(
-            calculate_average(yearly_data[year]["incomes"])
-        )
-        
-        # Average home value
-        stats["avgHomeValue"].append(
-            calculate_average(yearly_data[year]["home_values"])
-        )
-        
-        # Count by year
+        stats["avgIncome"].append(calculate_average(yearly_data[year]["incomes"]))
+        stats["avgHomeValue"].append(calculate_average(yearly_data[year]["home_values"]))
         stats["countByYear"].append(yearly_data[year]["count"])
-    
+
     return stats
 
 @app.post("/api/spots-in-buffer")
 async def get_spots_in_buffer(coords: CoordinateRequest):
     try:
-        # Create center point
         center = Point(coords.lon, coords.lat)
-        
-        # Create a buffer around the center point
-        # For simplicity, we'll use a degree-based buffer and approximate meters
-        # 0.00001 degrees is roughly 1.11 meters at the equator
-        buffer_degrees = coords.buffer_meters / 111000  # Approximate conversion
+        buffer_degrees = coords.buffer_meters / 111000
         buffer_circle = center.buffer(buffer_degrees)
-        
-        # Filter features within buffer
+
         filtered_features = []
         for feature in geojson_data["features"]:
             try:
-                # Convert feature geometry to shapely object
                 feature_geom = shape(feature["geometry"])
-                
-                # Check if feature intersects with the buffer
                 if buffer_circle.intersects(feature_geom):
                     filtered_features.append(feature)
             except Exception as e:
                 print(f"Error processing feature: {e}")
                 continue
-        
-        # Calculate statistics for the filtered features
+
         stats = calculate_statistics(filtered_features)
-        
-        # Create GeoJSON for the buffer
+
         buffer_geojson = {
             "type": "Feature",
             "geometry": {
@@ -206,7 +147,7 @@ async def get_spots_in_buffer(coords: CoordinateRequest):
             },
             "properties": {}
         }
-        
+
         return {
             "spots": {
                 "type": "FeatureCollection",
@@ -222,4 +163,4 @@ async def get_spots_in_buffer(coords: CoordinateRequest):
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8080)  # Changed port to 8080 for Google Cloud Run
+    uvicorn.run(app, host="0.0.0.0", port=8080)
