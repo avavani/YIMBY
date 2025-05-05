@@ -1,203 +1,125 @@
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
-from shapely.geometry import Point, Polygon, shape
+from shapely.geometry import Point, shape
+import requests
 import json
-import os
-import statistics
-import numpy as np
-from google.cloud import storage
-from dotenv import load_dotenv
-# Load environment variables from .env file
-load_dotenv()
+import functools
 
+# Lazy-load GeoJSON only once when needed
+GEOJSON_URL = "https://storage.googleapis.com/practicumdata/yimby.geojson"
+
+@functools.lru_cache(maxsize=1)
+def get_geojson_data():
+    try:
+        response = requests.get(GEOJSON_URL)
+        response.raise_for_status()
+        print("✅ GeoJSON loaded")
+        return response.json()
+    except Exception as e:
+        print(f"❌ Error loading GeoJSON: {e}")
+        return {"type": "FeatureCollection", "features": []}
+
+# Initialize FastAPI app
 app = FastAPI()
+print("✅ FastAPI initialized")
 
 # Enable CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Update this to be more restrictive in production
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# Google Cloud Storage configuration
-BUCKET_NAME = "Practicum"  # Replace with your actual bucket name
-GEOJSON_BLOB_NAME = "data/yimby.geojson"  # Path in your bucket
-
-# Initialize Google Cloud Storage client
-storage_client = storage.Client()
-bucket = storage_client.bucket(BUCKET_NAME)
-
-# Load GeoJSON data from Google Cloud Storage
-try:
-    blob = bucket.blob(GEOJSON_BLOB_NAME)
-    geojson_content = blob.download_as_text()
-    geojson_data = json.loads(geojson_content)
-    print(f"Successfully loaded GeoJSON data from Cloud Storage")
-except Exception as e:
-    print(f"Error loading GeoJSON data from Cloud Storage: {e}")
-    geojson_data = {"type": "FeatureCollection", "features": []}
-
+# Request model
 class CoordinateRequest(BaseModel):
     lat: float
     lon: float
     buffer_meters: float = 250
 
-# The rest of your code remains the same
+# Helper: average calculation
 def calculate_average(values):
-    """Calculate average of a list of values, filtering out None/null values"""
-    if not values:
-        return None
-    
-    # Filter out None/null values and convert to float
-    filtered_values = [float(v) for v in values if v is not None and v != ""]
-    
-    if not filtered_values:
-        return None
-    
-    return sum(filtered_values) / len(filtered_values)
+    filtered = [float(v) for v in values if v is not None and v != ""]
+    return sum(filtered) / len(filtered) if filtered else None
 
+# Helper: statistics from features
 def calculate_statistics(features):
-    # Your existing calculate_statistics function (unchanged)
-    """Calculate various statistics from the features"""
     if not features:
         return {}
-    
-    # Initialize data structures
+
     yearly_data = {}
     zoning_data = {}
-    market_values = []
-    sale_prices = []
-    impact_scores = []
-    
-    # Process each feature
+    market_values, sale_prices, impact_scores = [], [], []
+
     for feature in features:
         props = feature.get("properties", {})
-        
-        # Extract yearly data
+
         for year in range(2015, 2024):
             year_str = str(year)
-            if year_str not in yearly_data:
-                yearly_data[year_str] = {
-                    "incomes": [],
-                    "home_values": [],
-                    "count": 0
-                }
-            
+            yearly_data.setdefault(year_str, {"incomes": [], "home_values": [], "count": 0})
+
             income = props.get(f"med_income_{year}")
             home_value = props.get(f"med_home_value_{year}")
-            
+
             if income is not None:
                 yearly_data[year_str]["incomes"].append(income)
             if home_value is not None:
                 yearly_data[year_str]["home_values"].append(home_value)
-            
-            # Count by construction completion year
+
             cons_complete = props.get("cons_complete")
             if cons_complete == year or cons_complete == year_str:
                 yearly_data[year_str]["count"] += 1
-        
-        # Extract zoning data
+
         zoning = props.get("zoning")
         if zoning:
-            if zoning not in zoning_data:
-                zoning_data[zoning] = 0
-            zoning_data[zoning] += 1
-        
-        # Extract market value and sale price
-        market_value = props.get("market_value")
-        sale_price = props.get("sale_price")
-        impact_score = props.get("impact_score")
-        
-        if market_value is not None and market_value != "":
-            market_values.append(float(market_value))
-        if sale_price is not None and sale_price != "":
-            sale_prices.append(float(sale_price))
-        if impact_score is not None and impact_score != "":
-            impact_scores.append(float(impact_score))
-    
-    # Calculate statistics
-    stats = {
-        "years": [],
-        "avgIncome": [],
-        "avgHomeValue": [],
-        "countByYear": [],
+            zoning_data[zoning] = zoning_data.get(zoning, 0) + 1
+
+        if props.get("market_value"):
+            market_values.append(float(props["market_value"]))
+        if props.get("sale_price"):
+            sale_prices.append(float(props["sale_price"]))
+        if props.get("impact_score"):
+            impact_scores.append(float(props["impact_score"]))
+
+    avg_impact_score = calculate_average(impact_scores)
+    normalized_score = 100 if avg_impact_score and avg_impact_score > 500 else avg_impact_score
+
+    return {
+        "years": sorted(yearly_data.keys()),
+        "avgIncome": [calculate_average(yearly_data[y]["incomes"]) for y in sorted(yearly_data)],
+        "avgHomeValue": [calculate_average(yearly_data[y]["home_values"]) for y in sorted(yearly_data)],
+        "countByYear": [yearly_data[y]["count"] for y in sorted(yearly_data)],
         "zoningLabels": list(zoning_data.keys()),
         "zoningValues": list(zoning_data.values()),
         "avgMarketValue": calculate_average(market_values),
-        "avgSalePrice": calculate_average(sale_prices)
+        "avgSalePrice": calculate_average(sale_prices),
+        "avgImpactScore": normalized_score,
+        "rawAvgImpactScore": avg_impact_score,
     }
-    
-    # Calculate impact score statistics and normalize
-    avg_impact_score = calculate_average(impact_scores)
-    
-    # If we have impact scores, normalize them around 100
-    if avg_impact_score is not None:
-        if avg_impact_score > 500:  # If too large, normalize
-            normalization_factor = avg_impact_score / 100
-            stats["avgImpactScore"] = 100  # Normalized value
-            stats["rawAvgImpactScore"] = avg_impact_score  # Original value
-            
-            # Log for debugging
-            print(f"Normalized impact score: original={avg_impact_score}, normalized=100")
-        else:
-            stats["avgImpactScore"] = avg_impact_score
-            stats["rawAvgImpactScore"] = avg_impact_score
-    else:
-        stats["avgImpactScore"] = None
-        stats["rawAvgImpactScore"] = None
-    
-    # Calculate yearly averages
-    for year in sorted(yearly_data.keys()):
-        stats["years"].append(year)
-        
-        # Average income
-        stats["avgIncome"].append(
-            calculate_average(yearly_data[year]["incomes"])
-        )
-        
-        # Average home value
-        stats["avgHomeValue"].append(
-            calculate_average(yearly_data[year]["home_values"])
-        )
-        
-        # Count by year
-        stats["countByYear"].append(yearly_data[year]["count"])
-    
-    return stats
 
+# POST endpoint for spatial buffer analysis
 @app.post("/api/spots-in-buffer")
 async def get_spots_in_buffer(coords: CoordinateRequest):
     try:
-        # Create center point
+        geojson_data = get_geojson_data()
+
         center = Point(coords.lon, coords.lat)
-        
-        # Create a buffer around the center point
-        # For simplicity, we'll use a degree-based buffer and approximate meters
-        # 0.00001 degrees is roughly 1.11 meters at the equator
-        buffer_degrees = coords.buffer_meters / 111000  # Approximate conversion
+        buffer_degrees = coords.buffer_meters / 111000
         buffer_circle = center.buffer(buffer_degrees)
-        
-        # Filter features within buffer
+
         filtered_features = []
-        for feature in geojson_data["features"]:
+        for feature in geojson_data.get("features", []):
             try:
-                # Convert feature geometry to shapely object
-                feature_geom = shape(feature["geometry"])
-                
-                # Check if feature intersects with the buffer
-                if buffer_circle.intersects(feature_geom):
+                if buffer_circle.intersects(shape(feature["geometry"])):
                     filtered_features.append(feature)
             except Exception as e:
-                print(f"Error processing feature: {e}")
+                print(f"⚠️ Error processing feature: {e}")
                 continue
-        
-        # Calculate statistics for the filtered features
+
         stats = calculate_statistics(filtered_features)
-        
-        # Create GeoJSON for the buffer
+
         buffer_geojson = {
             "type": "Feature",
             "geometry": {
@@ -206,7 +128,7 @@ async def get_spots_in_buffer(coords: CoordinateRequest):
             },
             "properties": {}
         }
-        
+
         return {
             "spots": {
                 "type": "FeatureCollection",
@@ -216,10 +138,12 @@ async def get_spots_in_buffer(coords: CoordinateRequest):
             "buffer": buffer_geojson,
             "statistics": stats
         }
+
     except Exception as e:
-        print(f"Error in API: {e}")
+        print(f"❌ API error: {e}")
         raise HTTPException(status_code=500, detail=f"An error occurred: {str(e)}")
 
+# Local development entry
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8080)  # Changed port to 8080 for Google Cloud Run
+    uvicorn.run("main:app", host="0.0.0.0", port=8080)

@@ -13,8 +13,8 @@ let isDataLoading = false;
 
 // Cloud Storage URLs - replace with your actual bucket and file paths
 const CLOUD_STORAGE_BUCKET = 'practicumdata';
-const RCO_ANALYSIS_URL = `https://storage.googleapis.com/${CLOUD_STORAGE_BUCKET}/data/rco_analysis.json`;
-const RCO_IMPACT_URL = `https://storage.googleapis.com/${CLOUD_STORAGE_BUCKET}/data/rco_impact.json`;
+const RCO_ANALYSIS_URL = `https://storage.googleapis.com/${CLOUD_STORAGE_BUCKET}/rco_analysis.json`;
+const RCO_IMPACT_URL = `https://storage.googleapis.com/${CLOUD_STORAGE_BUCKET}/rco_impact.json`;
 
 /**
  * Initialize the RCO charts module - preload data

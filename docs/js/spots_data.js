@@ -5,7 +5,7 @@
 
 async function loadSpotsData(lat, lon, bufferMeters = 250) { 
   try {
-    const response = await fetch('http://localhost:8000/api/spots-in-buffer', {
+    const response = await fetch('https://fastapi-yimby-1009398918719.us-east1.run.app', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
