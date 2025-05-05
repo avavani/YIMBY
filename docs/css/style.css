@@ -90,8 +90,6 @@ header {
     border-bottom: 2px solid rgba(0, 0, 0, 0.1);
     margin-top: 1.5rem;
     gap: 0.5rem;
-    overflow-x: auto; /* From responsive section */
-    padding-bottom: 5px; /* From responsive section */
 }
 
 .tab {
@@ -330,7 +328,7 @@ input:focus {
 /* Dashboard Styles */
 .dashboard-wrapper {
     display: grid;
-    grid-template-columns: 4fr 3fr; /* Increased map size ratio */
+    grid-template-columns: 3fr 2fr;
     gap: 2.5rem;
     height: calc(100vh - 220px);
 }
@@ -344,34 +342,16 @@ input:focus {
     overflow: hidden;
     position: sticky;
     top: 2.5rem;
-    height: calc(100vh - 200px); /* Increased height */
+    height: calc(100vh - 280px);
 }
 
 .dashboard-right {
     display: flex;
     flex-direction: column;
-    gap: 2rem; /* Reduced gap for more compact layout */
+    gap: 2.5rem;
     overflow-y: auto;
     padding-right: 1rem;
     max-height: calc(100vh - 220px);
-    scrollbar-width: thin;
-    scrollbar-color: var(--accent-light-blue) var(--secondary-bg);
-    position: relative;
-    z-index: 1; /* Lower z-index than tooltips */
-}
-
-.dashboard-right::-webkit-scrollbar {
-    width: 8px;
-}
-
-.dashboard-right::-webkit-scrollbar-track {
-    background: var(--secondary-bg);
-    border-radius: 10px;
-}
-
-.dashboard-right::-webkit-scrollbar-thumb {
-    background-color: var(--accent-light-blue);
-    border-radius: 10px;
 }
 
 #dashboard-map-container {
@@ -387,8 +367,8 @@ input:focus {
 
 /* Dashboard Sections */
 .dashboard-section {
-    margin-bottom: 20px; /* Reduced margin */
-    padding: 1.2rem; /* Reduced padding */
+    margin-bottom: 30px;
+    padding: 1.5rem;
     background-color: var(--light-bg);
     border-radius: 12px;
     box-shadow: var(--shadow-soft);
@@ -411,25 +391,16 @@ input:focus {
     gap: 10px;
 }
 
-/* Message styling - Larger and more prominent */
+/* Message styling */
 #message {
-    font-size: 28px; /* Increased font size */
+    font-size: 24px;
     font-weight: 700;
     text-align: center;
-    padding: 1.8rem; /* Increased padding */
+    padding: 1.5rem;
     color: var(--text-dark);
     background-color: var(--light-bg);
     position: relative;
-    overflow: auto;
-    margin-bottom: 1.5rem;
-    border-radius: 12px;
-    box-shadow: var(--shadow-soft);
-    transition: var(--transition);
-}
-
-#message:hover {
-    box-shadow: var(--shadow-hover);
-    transform: translateY(-4px);
+    overflow: hidden;
 }
 
 #message::before {
@@ -459,7 +430,6 @@ input:focus {
     color: var(--accent-purple);
 }
 
-/* New tooltip styling */
 .info-icon {
     cursor: pointer;
     color: var(--accent-blue);
@@ -486,40 +456,32 @@ input:focus {
     border-radius: 8px;
     padding: 1rem;
     position: absolute;
-    z-index: 9999;
-    top: 0;
-    left: 100%;
-    margin-left: 15px;
+    z-index: 100;
+    bottom: 125%;
+    left: 50%;
+    transform: translateX(-50%);
     opacity: 0;
     transition: opacity 0.3s;
     box-shadow: var(--shadow-soft);
     border: 1px solid rgba(0, 0, 0, 0.1);
     font-size: 0.9rem;
     font-weight: normal;
-    pointer-events: none;
 }
 
 .info-tooltip .info-content::after {
     content: "";
     position: absolute;
-    top: 15px;
-    right: 100%;
-    margin-top: -8px;
+    top: 100%;
+    left: 50%;
+    margin-left: -8px;
     border-width: 8px;
     border-style: solid;
-    border-color: transparent var(--light-bg) transparent transparent;
+    border-color: var(--light-bg) transparent transparent transparent;
 }
 
 .info-tooltip:hover .info-content {
     visibility: visible;
     opacity: 1;
-    pointer-events: auto;
-}
-
-/* Add a subtle fade-in animation */
-@keyframes tooltipFadeIn {
-    from { opacity: 0; transform: translate(-50%, -90%); }
-    to { opacity: 1; transform: translate(-50%, -100%); }
 }
 
 /* Market value and sale price styling */
@@ -535,9 +497,8 @@ input:focus {
 }
 
 .metric-value {
-    font-size: 36px; /* Larger metric values */
+    font-size: 32px;
     font-weight: bold;
-    line-height: 1.2;
 }
 
 #avg-market-value {
@@ -562,42 +523,6 @@ input:focus {
 
 #units-by-year-chart .apexcharts-bar-series .apexcharts-bar:hover {
     opacity: 0.8;
-}
-
-/* Tooltip customizations for leaflet markers */
-.leaflet-popup-content {
-    padding: 8px;
-}
-
-.spot-popup {
-    font-family: 'Work Sans', sans-serif;
-    font-size: 14px;
-    line-height: 1.5;
-}
-
-.spot-popup-title {
-    font-weight: bold;
-    font-size: 16px;
-    margin-bottom: 8px;
-    color: var(--accent-purple);
-    border-bottom: 1px solid #eee;
-    padding-bottom: 5px;
-}
-
-.spot-popup-property {
-    display: flex;
-    justify-content: space-between;
-    margin: 5px 0;
-}
-
-.spot-popup-property strong {
-    color: var(--accent-dark-blue);
-    margin-right: 10px;
-}
-
-.spot-popup-property span {
-    text-align: right;
-    font-weight: 500;
 }
 
 /* Responsive Design */
@@ -640,6 +565,11 @@ input:focus {
         height: 400px;
     }
     
+    .tabs {
+        overflow-x: auto;
+        padding-bottom: 5px;
+    }
+    
     #value-price-container {
         flex-direction: column;
     }
@@ -670,4 +600,106 @@ input:focus {
         padding: 0.6rem 1rem;
         font-size: 0.9rem;
     }
+}
+
+/* Dashboard Layout Adjustments */
+.dashboard-wrapper {
+    display: grid;
+    grid-template-columns: 4fr 3fr; /* Increased map size ratio */
+    gap: 2.5rem;
+    height: calc(100vh - 220px);
+}
+
+.dashboard-left {
+    background: var(--light-bg);
+    border-radius: 12px;
+    box-shadow: var(--shadow-soft);
+    transition: var(--transition);
+    border: 1px solid rgba(0, 0, 0, 0.05);
+    overflow: hidden;
+    position: sticky;
+    top: 2.5rem;
+    height: calc(100vh - 200px); /* Increased height */
+}
+
+#dashboard-map-container {
+    height: 100%;
+    width: 100%;
+}
+
+#dashboard-map {
+    height: 100%;
+    width: 100%;
+    border-radius: 12px;
+}
+
+.dashboard-right {
+    display: flex;
+    flex-direction: column;
+    gap: 2rem; /* Reduced gap for more compact layout */
+    overflow-y: auto;
+    padding-right: 1rem;
+    max-height: calc(100vh - 220px);
+}
+
+/* Message styling - Larger and more prominent */
+#message {
+    font-size: 28px; /* Increased font size */
+    font-weight: 700;
+    text-align: center;
+    padding: 1.8rem; /* Increased padding */
+    color: var(--text-dark);
+    background-color: var(--light-bg);
+    position: relative;
+    overflow: hidden;
+    margin-bottom: 0.5rem; /* Added margin for spacing */
+}
+
+/* Make dashboard sections more compact */
+.dashboard-section {
+    margin-bottom: 20px; /* Reduced margin */
+    padding: 1.2rem; /* Reduced padding */
+}
+
+/* Make the metric values cleaner */
+.metric-value {
+    font-size: 36px; /* Larger metric values */
+    font-weight: bold;
+    line-height: 1.2;
+}
+
+/* Tooltip customizations for leaflet markers */
+.leaflet-popup-content {
+    padding: 8px;
+}
+
+.spot-popup {
+    font-family: 'Work Sans', sans-serif;
+    font-size: 14px;
+    line-height: 1.5;
+}
+
+.spot-popup-title {
+    font-weight: bold;
+    font-size: 16px;
+    margin-bottom: 8px;
+    color: var(--accent-purple);
+    border-bottom: 1px solid #eee;
+    padding-bottom: 5px;
+}
+
+.spot-popup-property {
+    display: flex;
+    justify-content: space-between;
+    margin: 5px 0;
+}
+
+.spot-popup-property strong {
+    color: var(--accent-dark-blue);
+    margin-right: 10px;
+}
+
+.spot-popup-property span {
+    text-align: right;
+    font-weight: 500;
 }

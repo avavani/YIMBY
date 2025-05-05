@@ -23,37 +23,14 @@ async function loadSpotsData(lat, lon, bufferMeters = 250) {
       throw new Error(`Failed to fetch spots data: ${response.status}`);
     }
 
-    const responseData = await response.json();
-    console.log('Received data from API:', responseData);
-    
-    // Extract spots, buffer, and statistics from the new response format
-    const { spots, buffer, statistics } = responseData;
-    
-    if (!spots) {
-      console.warn('No spots data in API response');
-      return { 
-        spots: { type: "FeatureCollection", features: [] },
-        buffer: null,
-        statistics: null
-      };
-    }
-    
-    console.log('Number of features:', spots.features?.length || 0);
-    console.log('Statistics received:', statistics);
+    const spotsCollection = await response.json();
+    console.log('Received spots data:', spotsCollection);
+    console.log('Number of features:', spotsCollection.features?.length || 0);
 
-    // Return all the data components
-    return { 
-      spots, 
-      buffer, 
-      statistics 
-    };
+    return { spots: spotsCollection };
   } catch (error) {
     console.error('Error loading spots:', error);
-    return { 
-      spots: { type: "FeatureCollection", features: [] },
-      buffer: null,
-      statistics: null
-    };
+    return { spots: { type: "FeatureCollection", features: [] } };
   }
 }
 

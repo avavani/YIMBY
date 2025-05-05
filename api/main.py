@@ -4,6 +4,7 @@ from pydantic import BaseModel
 from shapely.geometry import Point, shape
 import requests
 import json
+<<<<<<< HEAD
 
 # Load GeoJSON from public URL
 GEOJSON_URL = "https://storage.googleapis.com/practicumdata/yimby.geojson"
@@ -16,22 +17,43 @@ try:
     print("✅ Successfully loaded GeoJSON")
 except Exception as e:
     print(f"❌ Failed to load GeoJSON: {e}")
+=======
+import os
+>>>>>>> parent of ff6b400c (big stuff befor ehosting)
 
 app = FastAPI()
 
 app.add_middleware(
     CORSMiddleware,
+<<<<<<< HEAD
     allow_origins=["*"],  # allow all origins for dev
+=======
+    allow_origins=["http://localhost:3000"], 
+>>>>>>> parent of ff6b400c (big stuff befor ehosting)
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
+<<<<<<< HEAD
+=======
+# Load GeoJSON data
+DATA_PATH = os.path.join(os.path.dirname(__file__), "../data/yimby.geojson")
+
+try:
+    with open(DATA_PATH, 'r') as f:
+        geojson_data = json.load(f)
+except Exception as e:
+    print(f"Error loading GeoJSON data: {e}")
+    geojson_data = {"type": "FeatureCollection", "features": []}
+
+>>>>>>> parent of ff6b400c (big stuff befor ehosting)
 class CoordinateRequest(BaseModel):
     lat: float
     lon: float
     buffer_meters: float = 250
 
+<<<<<<< HEAD
 def calculate_average(values):
     filtered = [float(v) for v in values if v is not None and v != ""]
     return sum(filtered) / len(filtered) if filtered else None
@@ -93,6 +115,8 @@ def calculate_statistics(features):
         "rawAvgImpactScore": avg_impact_score
     }
 
+=======
+>>>>>>> parent of ff6b400c (big stuff befor ehosting)
 @app.post("/api/spots-in-buffer")
 async def get_spots_in_buffer(coords: CoordinateRequest):
     try:
@@ -108,6 +132,7 @@ async def get_spots_in_buffer(coords: CoordinateRequest):
                     filtered.append(feature)
             except Exception as e:
                 print(f"Error processing feature: {e}")
+<<<<<<< HEAD
 
         stats = calculate_statistics(filtered)
         buffer_geojson = {
@@ -128,3 +153,18 @@ async def get_spots_in_buffer(coords: CoordinateRequest):
     except Exception as e:
         print(f"API error: {e}")
         raise HTTPException(status_code=500, detail=str(e))
+=======
+                continue
+        
+        return {
+            "type": "FeatureCollection",
+            "features": filtered_features,
+            "count": len(filtered_features)
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"An error occurred: {str(e)}")
+
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run(app, host="0.0.0.0", port=8000)
+>>>>>>> parent of ff6b400c (big stuff befor ehosting)

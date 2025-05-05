@@ -1,9 +1,5 @@
 // Import function to set map layers in charts.js for interaction
-import { setMapLayers, highlightSpotsByYear, highlightSpotsByZoning } from './charts.js';
-
-// Create variable to store spots layer reference
-let globalSpotsLayer = null;
-let globalOriginalFeatures = [];
+import { setMapLayers } from './charts.js';
 
 //create function initmap that calls in map
 function initMap(el) {
@@ -34,7 +30,6 @@ function initMap(el) {
 
   // Create a layer group to manage the spots
   const spotsLayer = L.layerGroup().addTo(map);
-  globalSpotsLayer = spotsLayer;  // Store reference globally
 
   // Store original features for filtering
   let originalFeatures = [];
@@ -93,8 +88,7 @@ function initMap(el) {
       'Market Value': properties.market_value ? `$${Number(properties.market_value).toLocaleString()}` : 'N/A',
       'Sale Price': properties.sale_price ? `$${Number(properties.sale_price).toLocaleString()}` : 'N/A',
       'Zoning': properties.zoning || 'N/A',
-      'District': properties.DISTRICT || 'N/A',
-      'Type': properties.building_code_description_new || 'N/A',
+      'District': properties.DISTRICT || 'N/A'
     };
     
     // Format popup content with requested fields only
@@ -123,7 +117,6 @@ function initMap(el) {
 
     // Store original features for filtering
     originalFeatures = spotsData.features;
-    globalOriginalFeatures = spotsData.features;
 
     try {
       // Use pointToLayer to customize marker appearance (circles with new colors)
@@ -152,7 +145,7 @@ function initMap(el) {
     }
 
     // Share the spotsLayer with charts.js for interactive filtering
-    setMapLayers({ spotsLayer });
+    setMapLayers(spotsLayer);
   }
 
   // Listen for the highlight-spots event from charts.js
@@ -228,11 +221,6 @@ function initMap(el) {
     }
   }
 
-  // Listen for the reset-spots event from charts.js
-  window.addEventListener('reset-spots', (event) => {
-    resetSpots();
-  });
-
   // Add map controls
   L.control.scale().addTo(map);
   
@@ -243,103 +231,4 @@ function initMap(el) {
   };
 }
 
-// UPDATED resetSpots function
-function resetSpots() {
-  console.log('Reset spots function called');
-  
-  if (!globalSpotsLayer) {
-    console.warn('Global spots layer not available');
-    return;
-  }
-  
-  if (!globalOriginalFeatures || globalOriginalFeatures.length === 0) {
-    console.warn('No original features available for reset');
-    return;
-  }
-  
-  // Clear existing spots
-  globalSpotsLayer.clearLayers();
-
-  // Create a new GeoJSON object with all original features
-  const allGeoJson = {
-    type: "FeatureCollection",
-    features: globalOriginalFeatures
-  };
-
-  try {
-    console.log(`Re-adding ${globalOriginalFeatures.length} original features`);
-    
-    // Function to create circular marker styles (copy of the one in initMap)
-    const createCircleMarker = (feature, latlng, highlighted = false) => {
-      const markerColor = highlighted ? '#f72585' : '#7209b7';
-      const markerRadius = highlighted ? 8 : 6;
-      
-      return L.circleMarker(latlng, {
-        radius: markerRadius,
-        fillColor: markerColor,
-        color: '#3a0ca3',
-        weight: 1,
-        opacity: 1,
-        fillOpacity: 0.8
-      });
-    };
-
-    // Function to format popup content (copy of the one in initMap)
-    const formatPopupContent = (properties) => {
-      if (!properties) return "";
-      
-      // Extract only the requested fields
-      const fieldsToShow = {
-        'Construction Year': properties.cons_complete || 'N/A',
-        'RCO': properties.RCO || 'N/A',
-        'Market Value': properties.market_value ? `$${Number(properties.market_value).toLocaleString()}` : 'N/A',
-        'Sale Price': properties.sale_price ? `$${Number(properties.sale_price).toLocaleString()}` : 'N/A',
-        'Zoning': properties.zoning || 'N/A',
-        'District': properties.DISTRICT || 'N/A',
-        'Type': properties.building_code_description_new || 'N/A',
-      };
-      
-      // Format popup content with requested fields only
-      let popupContent = `<div class="spot-popup">`;
-      
-      Object.entries(fieldsToShow).forEach(([key, value]) => {
-        popupContent += `
-          <div class="spot-popup-property">
-            <strong>${key}:</strong>
-            <span>${value}</span>
-          </div>`;
-      });
-      
-      popupContent += `</div>`;
-      return popupContent;
-    };
-    
-    // Add all spots with default styling (not highlighted)
-    L.geoJSON(allGeoJson, {
-      pointToLayer: (feature, latlng) => createCircleMarker(feature, latlng, false),
-      onEachFeature: (feature, layer) => {
-        if (feature.properties) {
-          const popupContent = formatPopupContent(feature.properties);
-          layer.bindPopup(popupContent);
-          
-          // Store the construction completion year for filtering
-          if (feature.properties.cons_complete) {
-            layer._consYear = feature.properties.cons_complete;
-            layer._zoning = feature.properties.zoning;
-          }
-        }
-      }
-    }).addTo(globalSpotsLayer);
-    
-    console.log('Spots reset successfully');
-  } catch (error) {
-    console.error('Error resetting spots:', error);
-  }
-}
-
-export { 
-  initMap, 
-  highlightSpotsByYear, 
-  highlightSpotsByZoning,
-  resetSpots, 
-};
+export { initMap };
