@@ -98,7 +98,7 @@ function convertNestedJsonToArray(nestedJson) {
 }
 
 /**
- * Load and parse JSON data using fetch from Cloud Storage
+ * Load and parse JSON data using fetch
  * @returns {Promise<Object>} - The parsed RCO analysis and impact data
  */
 async function loadRcoData() {
@@ -108,7 +108,7 @@ async function loadRcoData() {
   }
 
   isDataLoading = true;
-  console.log('Loading RCO data from Cloud Storage...');
+  console.log('Loading RCO data files...');
   
   try {
     console.log('Fetching data from Cloud Storage URLs:', RCO_ANALYSIS_URL, RCO_IMPACT_URL);
@@ -143,7 +143,7 @@ async function loadRcoData() {
     isDataLoading = false;
     return { rcoAnalysisData, rcoImpactData };
   } catch (error) {
-    console.error('Error loading RCO data from Cloud Storage:', error);
+    console.error('Error loading RCO data:', error);
     isDataLoading = false;
     rcoAnalysisData = [];
     rcoImpactData = [];
@@ -467,7 +467,6 @@ function showRcoChartSections() {
   });
 }
 
-// Export the necessary functions
 export {
   initRcoCharts,
   loadRcoData,

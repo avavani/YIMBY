@@ -1,4 +1,13 @@
 data/DOR_Parcel.geojson
 data/yimby.geojson
+<<<<<<< HEAD
 .env
 data/key.json
+fastapi_env/
+fastapi_env/
+.venv/
+*.py
+*.ipynb
+requirements.txt
+=======
+>>>>>>> parent of ff6b400c (big stuff befor ehosting)

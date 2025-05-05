@@ -9,10 +9,13 @@ import os
 
 app = FastAPI()
 
-# Enable CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Update this to be more restrictive in production
+<<<<<<< HEAD
+    allow_origins=["*"],  # allow all origins for dev
+=======
+    allow_origins=["http://localhost:3000"], 
+>>>>>>> parent of ff6b400c (big stuff befor ehosting)
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -28,6 +31,7 @@ except Exception as e:
     print(f"Error loading GeoJSON data from local file: {e}")
     geojson_data = {"type": "FeatureCollection", "features": []}
 
+>>>>>>> parent of ff6b400c (big stuff befor ehosting)
 class CoordinateRequest(BaseModel):
     lat: float
     lon: float
@@ -49,8 +53,10 @@ def calculate_statistics(features):
     sale_prices = []
     impact_scores = []
 
+
     for feature in features:
         props = feature.get("properties", {})
+
 
         for year in range(2015, 2024):
             year_str = str(year)
@@ -64,14 +70,17 @@ def calculate_statistics(features):
             income = props.get(f"med_income_{year}")
             home_value = props.get(f"med_home_value_{year}")
 
+
             if income is not None:
                 yearly_data[year_str]["incomes"].append(income)
             if home_value is not None:
                 yearly_data[year_str]["home_values"].append(home_value)
 
+
             cons_complete = props.get("cons_complete")
             if cons_complete == year or cons_complete == year_str:
                 yearly_data[year_str]["count"] += 1
+
 
         zoning = props.get("zoning")
         if zoning:
@@ -125,6 +134,7 @@ async def get_spots_in_buffer(coords: CoordinateRequest):
     try:
         center = Point(coords.lon, coords.lat)
         buffer_degrees = coords.buffer_meters / 111000
+        buffer_degrees = coords.buffer_meters / 111000
         buffer_circle = center.buffer(buffer_degrees)
 
         filtered_features = []
@@ -143,22 +153,30 @@ async def get_spots_in_buffer(coords: CoordinateRequest):
             "type": "Feature",
             "geometry": {
                 "type": "Polygon",
-                "coordinates": [[(p[0], p[1]) for p in buffer_circle.exterior.coords]]
+                "coordinates": [[(p[0], p[1]) for p in buffer_circle.exterior.coords]],
             },
             "properties": {}
         }
 
+
         return {
-            "spots": {
-                "type": "FeatureCollection",
-                "features": filtered_features,
-                "count": len(filtered_features)
-            },
+            "spots": {"type": "FeatureCollection", "features": filtered, "count": len(filtered)},
             "buffer": buffer_geojson,
             "statistics": stats
         }
+
     except Exception as e:
-        print(f"Error in API: {e}")
+        print(f"API error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+=======
+                continue
+        
+        return {
+            "type": "FeatureCollection",
+            "features": filtered_features,
+            "count": len(filtered_features)
+        }
+    except Exception as e:
         raise HTTPException(status_code=500, detail=f"An error occurred: {str(e)}")
 
 if __name__ == "__main__":
