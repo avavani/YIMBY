@@ -12,6 +12,8 @@
         <link rel="preconnect" href="https://fonts.googleapis.com">
         <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
         <link href="https://fonts.googleapis.com/css2?family=Work+Sans:ital,wght@0,100..900;1,100..900&display=swap" rel="stylesheet">
+        <!-- Font Awesome for the information icon -->
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     </head>
     <body>
         <header>
@@ -42,20 +44,6 @@
                         <fieldset>
                             <div class="input-group">
                                 <label>Find New Construction In:</label>
-                                <div class="radio-group">
-                                    <label>
-                                        <input type="radio" name="search-type" value="address" checked>
-                                        By Address
-                                    </label>
-                                    <label>
-                                        <input type="radio" name="search-type" value="rco">
-                                        By RCO
-                                    </label>
-                                    <label>
-                                        <input type="radio" name="search-type" value="council-district">
-                                        By Council District
-                                    </label>
-                                </div>
                             </div>
 
                             <div class="input-group">
@@ -66,36 +54,7 @@
                                         <ul id="address-choices" class="hidden"></ul>
                                     </div>
                                 </div>
-                                
-                                <div id="rco-search" class="search-section hidden">
-                                    <label>Select RCO:</label>
-                                    <select id="rco-select">
-                                        <option value="">Choose an RCO...</option>
-                                        <!-- RCO options populated dynamically -->
-                                    </select>
-                                </div>
-                                
-                                <div id="council-district-search" class="search-section hidden">
-                                    <label>Select Council District:</label>
-                                    <select id="council-district-select">
-                                        <option value="">Choose a District...</option>
-                                        <!-- Council district options  populated dynamically -->
-                                    </select>
-                                </div>
-                            </div>
-                           
-                            <div class="input-group">
-                                <label>Year Range</label>
-                                <div class="year-range-select">
-                                    <select id="year-start">
-                                        <option value="">Start Year</option>
-                                    </select>
-                                    <span class="year-separator">to</span>
-                                    <select id="year-end">
-                                        <option value="">End Year</option>
-                                    </select>
-                                </div>
-                            </div>
+                                <br>
                            
                             <button id="search">Search</button>
                     
@@ -112,8 +71,93 @@
                         </div>
                     </div>
                     <div class="dashboard-right">
-                        <div id="message"></div>
-                        <div id="chart"></div>
+                        <!-- Dashboard Title Section -->
+                        <div id="message" class="dashboard-section"></div>
+                        
+                        <!-- Impact Score Section -->
+                        <div id="impact-score-container" class="dashboard-section">
+                            <h3>
+                                Impact Score
+                                <div class="info-tooltip">
+                                    <i class="fas fa-info-circle info-icon"></i>
+                                    <div class="info-content">
+                                        <p>The Impact Score reflects neighborhood-level economic change by averaging the real (inflation-adjusted) percent change in median household income and median home value between 2015 and 2023. The score is then indexed to 100 to improve interpretability:</p>
+                                        <ul style="margin-top: 8px; margin-left: 16px;">
+                                            <li>100 = No real change</li>
+                                            <li>Above 100 = Combined increase in income and/or home value</li>
+                                            <li>Below 100 = Combined decrease in income and/or home value</li>
+                                        </ul>
+                                        <p style="margin-top: 8px;">This score helps identify areas experiencing relative economic growth or decline, factoring in changes in both local earning power and housing market conditions.</p>
+                                    </div>
+                                </div>
+                            </h3>
+                            <div id="impact-score-value" class="metric-value"></div>
+                        </div>
+                        <!-- Zoning Pie Chart Section -->
+                        <div id="zoning-distribution-container" class="dashboard-section">
+                            <h3>Zoning Distribution</h3>
+                            <div id="zoning-pie-chart" class="chart-container"></div>
+                        </div>
+                        
+                        <!-- Market Value and Sale Price Section -->
+                        <div id="value-price-container" class="dashboard-section">
+                            <div class="metric-container">
+                                <h3>Average Market Value</h3>
+                                <div id="avg-market-value" class="metric-value"></div>
+                            </div>
+                            <div class="metric-container">
+                                <h3>Average Sale Price</h3>
+                                <div id="avg-sale-price" class="metric-value"></div>
+                            </div>
+                        </div>
+                        
+                        <!-- Income Chart Section -->
+                        <div id="income-chart-container" class="dashboard-section">
+                            <h3>Median Income Trend</h3>
+                            <div id="income-chart" class="chart-container"></div>
+                        </div>
+                        
+                        <!-- Home Value Chart Section -->
+                        <div id="home-value-chart-container" class="dashboard-section">
+                            <h3>Median Home Value Trend</h3>
+                            <div id="home-value-chart" class="chart-container"></div>
+                        </div>
+                        
+                        <!-- Units by Year Chart Section (Interactive) -->
+                        <div id="units-by-year-container" class="dashboard-section">
+                            <h3>Units by Construction Year</h3>
+                            <div id="units-by-year-chart" class="chart-container"></div>
+                        </div>
+
+                        <!-- RCO Analysis Chart Section -->
+                        <div id="rco-analysis-container" class="dashboard-section">
+                            <h3>RCO Variance Ratio
+                                <div class="info-tooltip">
+                                    <i class="fas fa-info-circle info-icon"></i>
+                                    <div class="info-content">
+                                        <p>The Variance Ratio measures how consistently new construction affects property values within a Registered Community Organization (RCO) area. Higher values indicate more uniform economic impact across the neighborhood.</p>
+                                        <p style="margin-top: 8px;">This chart compares your selected RCO (in pink) with other Philadelphia RCOs to show relative community development patterns.</p>
+                                    </div>
+                                </div>
+                            </h3>
+                            <div id="rco-analysis-chart" class="chart-container"></div>
+                        </div>
+
+                        <!-- RCO Impact Chart Section -->
+                        <div id="rco-impact-container" class="dashboard-section">
+                            <h3>
+                                RCO Impact Score
+                                <div class="info-tooltip">
+                                    <i class="fas fa-info-circle info-icon"></i>
+                                    <div class="info-content">
+                                        <p>The Impact Score reflects how new construction has influenced overall community economic health in each Registered Community Organization (RCO) area.</p>
+                                        <p style="margin-top: 8px;">Higher scores indicate greater positive economic outcomes from new development. Your selected RCO is shown in purple, with comparison RCOs in light blue.</p>
+                                    </div>
+                                </div>
+                            </h3>
+                            <div id="rco-impact-chart" class="chart-container"></div>
+                        </div>
+                    
                     </div>
                 </div>
             </div>
@@ -123,5 +167,6 @@
         <script src='https://unpkg.com/@turf/turf@6/turf.min.js'></script>
         <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
         <script src="js/main.js" type="module"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.0/papaparse.min.js"></script>
     </body>
 </html>

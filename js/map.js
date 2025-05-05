@@ -1,3 +1,6 @@
+// Import function to set map layers in charts.js for interaction
+import { setMapLayers } from './charts.js';
+
 //create function initmap that calls in map
 function initMap(el) {
   console.log('Initializing map...');
@@ -17,17 +20,19 @@ function initMap(el) {
   L.tileLayer(
     `https://api.mapbox.com/styles/v1/${Mapboxstyle}/tiles/512/{z}/{x}/{y}{r}?access_token=${Mapboxkey}`,
     { maxZoom: 19, 
-      // zoomOffset: -1,
      },
   ).addTo(map);
 
-  map.setView([39.953316807397144, -75.13516854006843], 14);
+  map.setView([39.9526, -75.1652], 14);
   
   // Create a layer group to manage the buffer
   const bufferLayer = L.layerGroup().addTo(map);
 
   // Create a layer group to manage the spots
   const spotsLayer = L.layerGroup().addTo(map);
+
+  // Store original features for filtering
+  let originalFeatures = [];
   
   // Function to display buffer
   function showBuffer(buffer) {
@@ -41,9 +46,9 @@ function initMap(el) {
     try {
       const bufferGeoJSON = L.geoJSON(buffer, {
         style: {
-          fillColor: '#3388ff',
+          fillColor: '#4cc9f0',
           fillOpacity: 0.2,
-          color: '#3388ff',
+          color: '#4361ee',
           weight: 2
         }
       }).addTo(bufferLayer);
@@ -57,6 +62,50 @@ function initMap(el) {
     }
   }
   
+  // Function to create circular marker styles
+  const createCircleMarker = (feature, latlng, highlighted = false) => {
+    const markerColor = highlighted ? '#f72585' : '#7209b7';
+    const markerRadius = highlighted ? 8 : 6;
+    
+    return L.circleMarker(latlng, {
+      radius: markerRadius,
+      fillColor: markerColor,
+      color: '#3a0ca3',
+      weight: 1,
+      opacity: 1,
+      fillOpacity: 0.8
+    });
+  };
+
+  // Function to format popup content with only specific fields
+  const formatPopupContent = (properties) => {
+    if (!properties) return "";
+    
+    // Extract only the requested fields
+    const fieldsToShow = {
+      'Construction Year': properties.cons_complete || 'N/A',
+      'RCO': properties.RCO || 'N/A',
+      'Market Value': properties.market_value ? `$${Number(properties.market_value).toLocaleString()}` : 'N/A',
+      'Sale Price': properties.sale_price ? `$${Number(properties.sale_price).toLocaleString()}` : 'N/A',
+      'Zoning': properties.zoning || 'N/A',
+      'District': properties.DISTRICT || 'N/A'
+    };
+    
+    // Format popup content with requested fields only
+    let popupContent = `<div class="spot-popup">`;
+    
+    Object.entries(fieldsToShow).forEach(([key, value]) => {
+      popupContent += `
+        <div class="spot-popup-property">
+          <strong>${key}:</strong>
+          <span>${value}</span>
+        </div>`;
+    });
+    
+    popupContent += `</div>`;
+    return popupContent;
+  };
+
   // Function to display spots
   function addSpots(spotsData) {
     spotsLayer.clearLayers();
@@ -66,25 +115,23 @@ function initMap(el) {
       return;
     }
 
+    // Store original features for filtering
+    originalFeatures = spotsData.features;
+
     try {
+      // Use pointToLayer to customize marker appearance (circles with new colors)
       const spotsGeoJSON = L.geoJSON(spotsData, {
-        style: {
-          fillColor: "#ff7800",
-          color: "#000",
-          weight: 1,
-          opacity: 1,
-          fillOpacity: 0.6
-        },
+        pointToLayer: (feature, latlng) => createCircleMarker(feature, latlng, false),
         onEachFeature: (feature, layer) => {
           if (feature.properties) {
-            let popupContent = "<div class='spot-popup'>";
-            for (const [key, value] of Object.entries(feature.properties)) {
-              if (value != null) {
-                popupContent += `<strong>${key}:</strong> ${value}<br>`;
-              }
-            }
-            popupContent += "</div>";
+            const popupContent = formatPopupContent(feature.properties);
             layer.bindPopup(popupContent);
+            
+            // Store the construction completion year for filtering
+            if (feature.properties.cons_complete) {
+              layer._consYear = feature.properties.cons_complete;
+              layer._zoning = feature.properties.zoning;
+            }
           }
         }
       }).addTo(spotsLayer);
@@ -95,6 +142,82 @@ function initMap(el) {
       }
     } catch (error) {
       console.error('Error displaying spots:', error);
+    }
+
+    // Share the spotsLayer with charts.js for interactive filtering
+    setMapLayers(spotsLayer);
+  }
+
+  // Listen for the highlight-spots event from charts.js
+  window.addEventListener('highlight-spots', (event) => {
+    const { spots, year } = event.detail;
+    highlightSpotsByYear(spots, year);
+  });
+  
+  // UPDATED: Listen for zoning-selected event from charts.js
+  window.addEventListener('zoning-selected', (event) => {
+    const { zoning, spots } = event.detail;
+    highlightSpotsByZoning(zoning);
+  });
+
+  // Function to highlight spots by year
+  function highlightSpotsByYear(filteredSpots, year) {
+    // Clear existing spots
+    spotsLayer.clearLayers();
+
+    // Create a new GeoJSON object with all original features
+    const allGeoJson = {
+      type: "FeatureCollection",
+      features: originalFeatures
+    };
+
+    try {
+      // Add all spots but with different styling based on if they match the year
+      L.geoJSON(allGeoJson, {
+        pointToLayer: (feature, latlng) => {
+          const isHighlighted = feature.properties.cons_complete === year || 
+                               feature.properties.cons_complete === year.toString();
+          return createCircleMarker(feature, latlng, isHighlighted);
+        },
+        onEachFeature: (feature, layer) => {
+          if (feature.properties) {
+            const popupContent = formatPopupContent(feature.properties);
+            layer.bindPopup(popupContent);
+          }
+        }
+      }).addTo(spotsLayer);
+    } catch (error) {
+      console.error('Error highlighting spots:', error);
+    }
+  }
+  
+  // Function to highlight spots by zoning
+  function highlightSpotsByZoning(zoning) {
+    // Clear existing spots
+    spotsLayer.clearLayers();
+
+    // Create a new GeoJSON object with all original features
+    const allGeoJson = {
+      type: "FeatureCollection",
+      features: originalFeatures
+    };
+
+    try {
+      // Add all spots but with different styling based on if they match the zoning
+      L.geoJSON(allGeoJson, {
+        pointToLayer: (feature, latlng) => {
+          const isHighlighted = feature.properties.zoning === zoning;
+          return createCircleMarker(feature, latlng, isHighlighted);
+        },
+        onEachFeature: (feature, layer) => {
+          if (feature.properties) {
+            const popupContent = formatPopupContent(feature.properties);
+            layer.bindPopup(popupContent);
+          }
+        }
+      }).addTo(spotsLayer);
+    } catch (error) {
+      console.error('Error highlighting spots by zoning:', error);
     }
   }
 

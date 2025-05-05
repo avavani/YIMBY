@@ -2,10 +2,6 @@
 const addressEntry = document.querySelector('#entry');
 const addressChoices = document.querySelector('#address-choices');
 const searchButton = document.querySelector('#search');
-const yearStartSelect = document.querySelector('#year-start');
-const yearEndSelect = document.querySelector('#year-end');
-const rcoSelect = document.querySelector('#rco-select');
-const districtSelect = document.querySelector('#council-district-select');
 
 //create empty container for selected addresses
 let selectedLocation = null;
@@ -23,71 +19,23 @@ function initializeAddressEntry(events) {
   
     //add a listener event for clicks of search buttons
     searchButton.addEventListener('click', () => {
-      const searchType = document.querySelector('input[name="search-type"]:checked').value;
-      const yearStart = yearStartSelect.value ? parseInt(yearStartSelect.value) : null;
-      const yearEnd = yearEndSelect.value ? parseInt(yearEndSelect.value) : null;
-      
-      // Validate year range
-      if (yearStart && yearEnd && yearStart > yearEnd) {
-        alert('Start year must be before or equal to end year');
+      if (!selectedLocation) {
+        alert('Please select an address');
         return;
       }
       
-      switch(searchType) {
-        case 'address':
-          if (!selectedLocation) {
-            alert('Please select an address');
-            return;
-          }
-          
-          const selectedPoint = turf.point([selectedLocation.lon, selectedLocation.lat]);
-          const buffer = turf.buffer(selectedPoint, 0.75, { units: 'kilometers' });
-          
-          const addressEvent = new CustomEvent('address-search', {
-            detail: {
-              lat: selectedLocation.lat,
-              lon: selectedLocation.lon,
-              buffer,
-              bounds: turf.bbox(buffer),
-              yearStart,
-              yearEnd
-            },
-          });
-          events.dispatchEvent(addressEvent);
-          break;
-          
-        case 'rco':
-          if (!rcoSelect.value) {
-            alert('Please select an RCO');
-            return;
-          }
-          
-          const rcoEvent = new CustomEvent('rco-search', {
-            detail: {
-              rcoName: rcoSelect.value,
-              yearStart,
-              yearEnd
-            },
-          });
-          events.dispatchEvent(rcoEvent);
-          break;
-          
-        case 'council-district':
-          if (!districtSelect.value) {
-            alert('Please select a Council District');
-            return;
-          }
-          
-          const districtEvent = new CustomEvent('district-search', {
-            detail: {
-              district: districtSelect.value,
-              yearStart,
-              yearEnd
-            },
-          });
-          events.dispatchEvent(districtEvent);
-          break;
-      }
+      const selectedPoint = turf.point([selectedLocation.lon, selectedLocation.lat]);
+      const buffer = turf.buffer(selectedPoint, 0.25, { units: 'kilometers' });
+      
+      const addressEvent = new CustomEvent('address-search', {
+        detail: {
+          lat: selectedLocation.lat,
+          lon: selectedLocation.lon,
+          buffer,
+          bounds: turf.bbox(buffer)
+        },
+      });
+      events.dispatchEvent(addressEvent);
     });
 }
   
