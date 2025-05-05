@@ -11,6 +11,11 @@ let rcoAnalysisChart = null;
 let rcoImpactChart = null;
 let isDataLoading = false;
 
+// Cloud Storage URLs - replace with your actual bucket and file paths
+const CLOUD_STORAGE_BUCKET = 'practicumdata';
+const RCO_ANALYSIS_URL = `https://storage.googleapis.com/${CLOUD_STORAGE_BUCKET}/data/rco_analysis.json`;
+const RCO_IMPACT_URL = `https://storage.googleapis.com/${CLOUD_STORAGE_BUCKET}/data/rco_impact.json`;
+
 /**
  * Initialize the RCO charts module - preload data
  */
@@ -105,7 +110,7 @@ function convertNestedJsonToArray(nestedJson) {
 }
 
 /**
- * Load and parse JSON data using fetch
+ * Load and parse JSON data using fetch from Cloud Storage
  * @returns {Promise<Object>} - The parsed RCO analysis and impact data
  */
 async function loadRcoData() {
@@ -118,20 +123,20 @@ async function loadRcoData() {
   }
 
   isDataLoading = true;
-  console.log('Loading RCO data files...');
+  console.log('Loading RCO data from Cloud Storage...');
   
   try {
-    // Load JSON data files using fetch
-    console.log('Using fetch API to load JSON data');
+    // Load JSON data files from Cloud Storage using fetch
+    console.log('Fetching data from Cloud Storage URLs:', RCO_ANALYSIS_URL, RCO_IMPACT_URL);
     
     // Fetch the analysis data
-    const analysisResponse = await fetch('../data/rco_analysis.json');
+    const analysisResponse = await fetch(RCO_ANALYSIS_URL);
     if (!analysisResponse.ok) {
       throw new Error(`HTTP error! status: ${analysisResponse.status}`);
     }
     
     // Fetch the impact data
-    const impactResponse = await fetch('../data/rco_impact.json');
+    const impactResponse = await fetch(RCO_IMPACT_URL);
     if (!impactResponse.ok) {
       throw new Error(`HTTP error! status: ${impactResponse.status}`);
     }
@@ -163,7 +168,7 @@ async function loadRcoData() {
     isDataLoading = false;
     return { rcoAnalysisData, rcoImpactData };
   } catch (error) {
-    console.error('Error loading RCO data:', error);
+    console.error('Error loading RCO data from Cloud Storage:', error);
     isDataLoading = false;
     
     // Reset data to empty arrays on error
@@ -174,11 +179,9 @@ async function loadRcoData() {
   }
 }
 
-/**
- * Create the RCO comparison charts
- * @param {Array} features - The GeoJSON features
- */
+// The rest of your functions remain unchanged
 function createRcoCharts(features) {
+  // Your existing createRcoCharts function
   if (!features || !features.length) {
     hideRcoChartSections();
     return;
@@ -192,7 +195,7 @@ function createRcoCharts(features) {
   }
   
   // Try different property names for RCO
-  const rcoPropertyNames = ['rco', 'RCO', 'Rco', 'registered_community_organization'];
+  const rcoPropertyNames = ['RCO'];
   
   // Extract unique RCO values from the features, trying different property names
   let uniqueRcos = [];
@@ -263,12 +266,6 @@ function createRcoCharts(features) {
   }
 }
 
-/**
- * Helper function to find a key in an object from a list of possible keys
- * @param {Object} obj - The object to search
- * @param {Array} possibleKeys - Array of possible key names
- * @returns {string|null} - The found key or null
- */
 function findKeyInObject(obj, possibleKeys) {
   if (!obj) return null;
   
@@ -292,12 +289,8 @@ function findKeyInObject(obj, possibleKeys) {
   return null;
 }
 
-/**
- * Render the RCO Analysis Chart (Variance Ratio)
- * @param {Array} uniqueRcos - Array of unique RCO values
- * @param {Array} analysisData - The RCO analysis data
- */
 function renderRcoAnalysisChart(uniqueRcos, analysisData) {
+  // Your existing renderRcoAnalysisChart function
   const rcoChartEl = document.querySelector("#rco-analysis-chart");
   if (!rcoChartEl) {
     console.log("RCO chart element not found");
@@ -308,8 +301,8 @@ function renderRcoAnalysisChart(uniqueRcos, analysisData) {
   rcoChartEl.innerHTML = '';
   
   // Look for RCO property in the data (could be 'rco', 'RCO', etc.)
-  const rcoKey = findKeyInObject(analysisData[0], ['rco', 'RCO', 'Rco', 'registered_community_organization']);
-  const varianceKey = findKeyInObject(analysisData[0], ['variance_ratio', 'varianceRatio', 'variance', 'var_ratio']);
+  const rcoKey = findKeyInObject(analysisData[0], ['RCO']);
+  const varianceKey = findKeyInObject(analysisData[0], ['variance_ratio']);
   
   if (!rcoKey || !varianceKey) {
     console.error('Could not find RCO or variance_ratio properties in data');
@@ -427,12 +420,8 @@ function renderRcoAnalysisChart(uniqueRcos, analysisData) {
   }
 }
 
-/**
- * Render the RCO Impact Chart (Impact Score)
- * @param {Array} uniqueRcos - Array of unique RCO values
- * @param {Array} impactData - The RCO impact data
- */
 function renderRcoImpactChart(uniqueRcos, impactData) {
+  // Your existing renderRcoImpactChart function
   const rcoImpactChartEl = document.querySelector("#rco-impact-chart");
   if (!rcoImpactChartEl) {
     console.log("RCO impact chart element not found");
@@ -562,9 +551,6 @@ function renderRcoImpactChart(uniqueRcos, impactData) {
   }
 }
 
-/**
- * Helper function to hide RCO chart sections when no data
- */
 function hideRcoChartSections() {
   const sections = [
     'rco-analysis-container',
@@ -577,9 +563,6 @@ function hideRcoChartSections() {
   });
 }
 
-/**
- * Helper function to show RCO chart sections when data is available
- */
 function showRcoChartSections() {
   const sections = [
     'rco-analysis-container',
