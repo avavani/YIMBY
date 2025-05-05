@@ -20,6 +20,9 @@ function prepareChartData(features) {
     return null;
   }
 
+  // Show number of units found
+  updateMessage(`Found ${features.length} multifamily units`);
+
   // Store features globally for interaction
   allFeatures = features;
 
