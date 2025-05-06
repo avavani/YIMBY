@@ -1,8 +1,3 @@
-//create a function to load spots_data
-
-//here we use async function as it is better suited for calling data
-//and allows us to use await
-
 async function loadSpotsData(lat, lon, bufferMeters = 250) {
   const isLocalhost = window.location.hostname === "localhost";
   const BASE_API_URL = isLocalhost
@@ -27,15 +22,6 @@ async function loadSpotsData(lat, lon, bufferMeters = 250) {
     if (!response.ok) {
       throw new Error(`Failed to fetch spots data: ${response.status}`);
     }
-
-    const responseData = await response.json();
-    return responseData;
-  } catch (error) {
-    console.error('Error fetching spots data:', error);
-    return null;
-  }
-}
-
 
     const spotsCollection = await response.json();
     console.log('Received spots data:', spotsCollection);
