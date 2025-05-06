@@ -17,7 +17,7 @@ app.add_middleware(
 )
 
 # Load GeoJSON data
-DATA_PATH = os.path.join(os.path.dirname(__file__), "../data/yimby.geojson")
+DATA_PATH = os.path.join(os.path.dirname(__file__), "data/yimby.geojson")
 
 try:
     with open(DATA_PATH, 'r') as f:
