@@ -391,17 +391,12 @@ input:focus {
     gap: 10px;
 }
 
-/* Message styling */
 #message {
-    font-size: 24px;
-    font-weight: 700;
+    position: relative; 
     text-align: center;
-    padding: 1.5rem;
     color: var(--text-dark);
     background-color: var(--light-bg);
-    position: relative;
-    overflow: visible;
-    margin-bottom: 1.5rem;
+    overflow: hidden; 
     border-radius: 12px;
     box-shadow: var(--shadow-soft);
     transition: var(--transition);
@@ -414,7 +409,7 @@ input:focus {
 
 #message::before {
     content: '';
-    position: absolute;
+    position: absolute; 
     top: 0;
     left: 0;
     width: 100%;
@@ -422,11 +417,18 @@ input:focus {
     background: var(--gradient-accent);
     opacity: 0.05;
     transition: var(--transition);
+    z-index: 0;
 }
 
 #message:hover::before {
     opacity: 0.1;
 }
+
+#message > * {
+    position: relative; 
+    z-index: 1;
+}
+
 
 /* Impact Score styling */
 #impact-score-container {
@@ -465,32 +467,34 @@ input:focus {
     border-radius: 8px;
     padding: 1rem;
     position: absolute;
-    z-index: 100;
-    bottom: 125%;
-    left: 50%;
-    transform: translateX(-50%);
+    z-index: 9999;
+    top: 0;
+    left: 100%;
+    margin-left: 15px;
     opacity: 0;
     transition: opacity 0.3s;
     box-shadow: var(--shadow-soft);
     border: 1px solid rgba(0, 0, 0, 0.1);
     font-size: 0.9rem;
     font-weight: normal;
+    pointer-events: none;
 }
 
 .info-tooltip .info-content::after {
     content: "";
     position: absolute;
-    top: 100%;
-    left: 50%;
-    margin-left: -8px;
+    top: 15px;
+    right: 100%;
+    margin-top: -8px;
     border-width: 8px;
     border-style: solid;
-    border-color: var(--light-bg) transparent transparent transparent;
+    border-color: transparent var(--light-bg) transparent transparent;
 }
 
 .info-tooltip:hover .info-content {
     visibility: visible;
     opacity: 1;
+    pointer-events: auto;
 }
 
 /* Market value and sale price styling */

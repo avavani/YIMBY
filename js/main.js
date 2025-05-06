@@ -6,12 +6,12 @@ import { initializeAddressEntry } from './address.js';
 import { loadSpotsData } from './spots_data.js';
 //import charts.js to update message and other chart functions
 import { 
-    updateMessage, 
     createCharts,
     showChartSections,
-    hideChartSections
+    hideChartSections,
+    resetSpotHighlights
 } from './charts.js';
-//import rco chart functionality with the new convertNestedJsonToArray function
+//import rco chart functionality
 import { 
     initRcoCharts, 
     createRcoCharts 
@@ -26,6 +26,9 @@ document.addEventListener('DOMContentLoaded', () => {
     // Create a global event bus for communication between components
     window.eventBus = new EventTarget();
     
+    // Store response data globally so it can be accessed by charts.js
+    window.responseData = null;
+    
     // Function to switch to dashboard tab
     function switchToDashboard() {
         tabs.forEach(t => t.classList.remove('active'));
@@ -33,6 +36,33 @@ document.addEventListener('DOMContentLoaded', () => {
         
         dashboardTab.classList.add('active');
         document.getElementById('dashboard-view').classList.add('active');
+    }
+
+    // Function to update message - now defined in main.js
+    function updateMessage(message) {
+        const messageEl = document.getElementById('message');
+        if (messageEl) {
+            messageEl.textContent = message;
+            
+            // Ensure message is visible with proper styling
+            messageEl.style.display = 'block';
+            messageEl.style.visibility = 'visible';
+            messageEl.style.padding = '1.8rem';
+            messageEl.style.backgroundColor = '#ffffff';
+            messageEl.style.borderRadius = '12px';
+            messageEl.style.boxShadow = '0 8px 30px rgba(0,0,0,0.05)';
+            messageEl.style.fontWeight = '700';
+            messageEl.style.fontSize = '28px';
+            messageEl.style.textAlign = 'center';
+            messageEl.style.marginBottom = '1.5rem';
+            messageEl.style.color = 'var(--text-dark)';
+            messageEl.style.position = 'relative';
+            messageEl.style.overflow = 'hidden';
+            
+            console.log('Message updated to:', message);
+        } else {
+            console.error('Message element not found!');
+        }
     }
 
     // Tab switching functionality
@@ -65,7 +95,6 @@ document.addEventListener('DOMContentLoaded', () => {
     initializeAddressEntry(events);
 
     // Initialize RCO charts module - preload data
-    // This will use the convertNestedJsonToArray function for JSON conversion
     initRcoCharts();
 
     // Add listener for JSON conversion errors
@@ -80,7 +109,15 @@ document.addEventListener('DOMContentLoaded', () => {
         if (lat && lon) {
             try {
                 console.log('Loading spots data for address...');
-                const { spots } = await loadSpotsData(lat, lon, 250);
+                const response = await loadSpotsData(lat, lon, 250);
+                
+                // Store response data globally
+                window.responseData = response;
+                
+                // Handle both new and old response formats
+                const spots = response.spots || response;
+                const statistics = response.statistics;
+                
                 console.log('Spots loaded:', spots);
                 
                 // Enable dashboard
@@ -96,10 +133,12 @@ document.addEventListener('DOMContentLoaded', () => {
                         // Set initial message based on search location and features count
                         const featuresCount = spots.features.length;
                         const address = evt.detail.address || `${lat.toFixed(4)}, ${lon.toFixed(4)}`;
-                        updateMessage(`Found ${featuresCount} multifamily units near ${address}`);
                         
-                        // Update standard charts
-                        createCharts(spots.features);
+                        // Directly update message here
+                        updateMessage(`Found ${featuresCount} multifamily units`);
+                        
+                        // Update standard charts (skip updating message in charts.js)
+                        createCharts(spots.features, statistics);
                         
                         // Create RCO charts
                         createRcoCharts(spots.features);
@@ -120,24 +159,24 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    //update message and charts on feature selection
+    //update charts on feature selection (without changing message)
     events.addEventListener('update-message', (evt) => {
         const { feature } = evt.detail;
         
         // Check if we received a single feature or an array
         if (Array.isArray(feature)) {
-            // Update charts with the feature array and set message
-            const featuresCount = feature.length;
-            updateMessage(`${featuresCount} multifamily units in selected area`);
-            createCharts(feature);
+            // Update charts with the feature array (no message update)
+            if (window.responseData && window.responseData.statistics) {
+                createCharts(feature, window.responseData.statistics);
+            } else {
+                createCharts(feature);
+            }
         } else {
-            // If it's a single feature, wrap it in an array
-            const address = feature.properties.address || 'Unknown address';
-            updateMessage(`Selected: ${address}`);
+            // If it's a single feature, wrap it in an array (no message update)
             createCharts([feature]);
         }
         
-        // Also update RCO charts when message is updated
+        // Also update RCO charts when feature selection changes
         createRcoCharts(Array.isArray(feature) ? feature : [feature]);
     });
 
