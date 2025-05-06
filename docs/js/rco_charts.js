@@ -12,8 +12,8 @@ let rcoImpactChart = null;
 let isDataLoading = false;
 
 // Cloud Storage URLs - replace with your actual bucket and file paths
-const RCO_ANALYSIS_URL = '../data/rco_analysis.json';
-const RCO_IMPACT_URL = '../data/rco_impact.json';
+const RCO_ANALYSIS_URL = 'data/rco_analysis.json';
+const RCO_IMPACT_URL = 'data/rco_impact.json';
 
 /**
  * Initialize the RCO charts module - preload data
